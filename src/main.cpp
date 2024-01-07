@@ -5,22 +5,14 @@
 #include <utility/wifi_drv.h>
 
 #include "arduino_secrets.h"
-
-#define DEVICE_NAME "mkr_wifi_1010_01"
+#include "constants.h"
 
 char ssid[] = SECRET_SSID;
 char pass[] = SECRET_PASS;
-char RELAY_1[] = "relay1";
-char RELAY_2[] = "relay2";
-char A_1[] = "digital_a1";
-char A_2[] = "digital_a2";
-char A_3[] = "digital_a3";
-char A_4[] = "digital_a4";
 
 int status = WL_IDLE_STATUS;
 
-int a[] = {15, 16, 17, 18, 19};
-char *sensorNames[]{nullptr, A_1, A_2, A_3, A_4};
+const char *sensorNames[]{nullptr, A_1, A_2, A_3, A_4};
 boolean sensorStates[] = {LOW, LOW, LOW, LOW, LOW};
 unsigned long lastReadAt = millis();
 
@@ -52,6 +44,12 @@ void onSwitchCommand(bool state, HASwitch *sender) {
     sender->setState(state); // report state back to the Home Assistant
 }
 
+void showColor(int red, int green, int blue) {
+    WiFiDrv::analogWrite(RED, red);
+    WiFiDrv::analogWrite(GREEN, green);
+    WiFiDrv::analogWrite(BLUE, blue);
+}
+
 void printWifiStatus() {
     // print the SSID of the network you're attached to:
     Serial.print("SSID: ");
@@ -67,24 +65,28 @@ void printWifiStatus() {
     Serial.print("signal strength (RSSI):");
     Serial.print(rssi);
     Serial.println(" dBm");
+    showColor(100, 0, 100);
 }
 
 void setup() {
-    pinMode(a[1], INPUT_PULLUP);
-    pinMode(a[2], INPUT_PULLUP);
-    pinMode(a[3], INPUT_PULLUP);
-    pinMode(a[4], INPUT_PULLUP);
+    pinMode(A[1], INPUT_PULLUP);
+    pinMode(A[2], INPUT_PULLUP);
+    pinMode(A[3], INPUT_PULLUP);
+    pinMode(A[4], INPUT_PULLUP);
+    WiFiDrv::pinMode(RED, OUTPUT);
+    WiFiDrv::pinMode(GREEN, OUTPUT);
+    WiFiDrv::pinMode(BLUE, OUTPUT);
+
+    showColor(100, 0, 0);
 
     //Initialize serial and wait for port to open:
-    Serial.begin(9600);
-    while (!Serial) { ; // wait for serial port to connect. Needed for native USB port only
-    }
+//    Serial.begin(9600);
+//    while (!Serial) { ; // wait for serial port to connect. Needed for native USB port only
+//    }
 
     // check for the WiFi module:
-    if (WiFi.status() == WL_NO_MODULE) {
+    while (WiFi.status() == WL_NO_MODULE) {
         Serial.println("Communication with WiFi module failed!");
-        // don't continue
-        while (true);
     }
 
     String fv = WiFiClass::firmwareVersion();
@@ -100,7 +102,9 @@ void setup() {
         status = WiFi.begin(ssid, pass);
 
         // wait 10 seconds for connection:
+        showColor(0, 0, 0);
         delay(10000);
+        showColor(100, 0, 0);
     }
 
     // you're connected now, so print out the status:
@@ -127,13 +131,16 @@ void setup() {
 void loop() {
     if (!mqtt.isConnected()) {
         Serial.println("not connected to mqtt :(");
+        showColor(100, 0, 0);
+    } else {
+        showColor(0, 100, 0);
     }
 
     mqtt.loop();
 
     if ((millis() - lastReadAt) > 30) {
         for (int i = 1; i < 5; i++) {
-            sensors[i]->setState(digitalRead(a[i]));
+            sensors[i]->setState(digitalRead(A[i]));
             sensorStates[i] = sensors[i]->getCurrentState();
         }
         lastReadAt = millis();
