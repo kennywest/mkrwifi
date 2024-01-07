@@ -30,3 +30,9 @@
 *.exe
 *.out
 *.app
+
+src/arduino_secrets.h
+projectFilesBackup
+.idea
+.pio
+
