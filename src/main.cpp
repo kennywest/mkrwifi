@@ -2,11 +2,11 @@
 #include <ArduinoHA.h>
 #include <WiFiNINA.h>
 #include <utility/wifi_drv.h>
+#include <ArduinoLog.h>
 
 #include "arduino_secrets.h"
 #include "constants.h"
 #include "momentary_relay.h"
-#include "ArduinoLog.h"
 
 char ssid[] = SECRET_SSID;
 char pass[] = SECRET_PASS;
@@ -92,8 +92,8 @@ void setup() {
     //Initialize serial and wait for port to open:
     Serial.begin(9600);
     Log.begin(LOG_LEVEL_VERBOSE, &Serial);
-    while (!Serial) { ; // wait for serial port to connect. Needed for native USB port only
-    }
+//    while (!Serial) { ; // wait for serial port to connect. Needed for native USB port only
+//    }
 
     // check for the WiFi module:
     while (WiFi.status() == WL_NO_MODULE) {
