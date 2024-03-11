@@ -64,7 +64,7 @@ void showColor(int red, int green, int blue) {
     WiFiDrv::analogWrite(BLUE, blue);
 }
 
-void printWifiStatus() {
+void printWiFiStatus() {
     // print the SSID of the network you're attached to:
     Log.notice(F("SSID: %s" CR), WiFi.SSID());
 
@@ -77,6 +77,37 @@ void printWifiStatus() {
     Log.notice(F("signal strength (RSSI): %l dBm" CR), rssi);
     showColor(100, 0, 100);
 }
+
+void connectToWiFi() {
+    status = WL_IDLE_STATUS;
+    while (status != WL_CONNECTED) {
+        Log.notice(F("Attempting to connect to SSID: %s" CR), ssid);
+
+        // Connect to WPA/WPA2 network. Change this line if using open or WEP network:
+        status = WiFi.begin(ssid, pass);
+
+        // wait 10 seconds for connection:
+        showColor(10, 5, 5);
+
+        if (status != WL_CONNECTED) {
+            delay(10000);
+        }
+
+        showColor(10, 10, 5);
+    }
+
+    // you're connected now, so print out the status:
+    printWiFiStatus();
+}
+
+void testWiFiConnection() {
+    int wifiStatus = WiFi.status();
+    if (wifiStatus == WL_CONNECTION_LOST || wifiStatus == WL_DISCONNECTED || wifiStatus == WL_SCAN_COMPLETED) {
+        Log.errorln("Lost connection with WiFi network, reconnecting ...");
+        connectToWiFi();
+    }
+}
+
 
 void setup() {
     pinMode(A[1], INPUT_PULLUP);
@@ -106,20 +137,7 @@ void setup() {
     }
 
     // attempt to connect to WiFi network:
-    while (status != WL_CONNECTED) {
-        Log.notice(F("Attempting to connect to SSID: %s" CR), ssid);
-        // Connect to WPA/WPA2 network. Change this line if using open or WEP network:
-        status = WiFi.begin(ssid, pass);
-
-        // wait 10 seconds for connection:
-        showColor(10, 5, 5);
-        delay(10000);
-        showColor(10, 10, 5);
-    }
-
-    // you're connected now, so print out the status:
-    printWifiStatus();
-
+    connectToWiFi();
 
     // set device's details (optional)
     device.setName(DEVICE_NAME);
@@ -142,6 +160,8 @@ void setup() {
     mqtt.begin(BROKER_ADDR, BROKER_USERNAME, BROKER_PASSWORD);
 }
 
+unsigned long connectionLastCheckedAt = 0;
+
 void loop() {
     if (!mqtt.isConnected()) {
         Log.errorln("not connected to mqtt :(");
@@ -162,4 +182,9 @@ void loop() {
 
     momentaryRelay1.loop();
     momentaryRelay2.loop();
+
+    if ((millis() - connectionLastCheckedAt) > 3000) {
+        testWiFiConnection();
+        connectionLastCheckedAt = millis();
+    }
 }
